@@ -1,6 +1,6 @@
 [Details]
   Icon = "icon.png"
-  Name = "Gualto"
-  ID = "com.lostdusty.gualto"
-  Version = "1.0.3"
+  Name = "Guibalt"
+  ID = "br.dev.lostdusty.guibalt"
+  Version = "1.1.0"
   Build = 23
