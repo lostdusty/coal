@@ -33,7 +33,7 @@ func showFirstRunScreen() fyne.CanvasObject {
 	welcomeEntryApiKey.ActionItem = &widget.Button{
 		Icon: theme.HelpIcon(),
 		OnTapped: func() {
-			dialog.ShowInformation("Help - Api Keys", "You might need an api key if you wanna use certain instances.\nAsk for the instance owner for one.\nThis field can be blank if a key is not needed.", windowGuibalt)
+			dialog.ShowInformation("Help - Api Keys", "You might need an api key if you wanna use certain instances.\nAsk for the instance owner for one.\nThis field can be blank if a key is not needed.", coalWindow)
 		},
 	}
 	revealApiKeyBtn := widget.NewButtonWithIcon("", theme.VisibilityIcon(), func() {
@@ -43,7 +43,7 @@ func showFirstRunScreen() fyne.CanvasObject {
 	formFieldApiKey := container.NewBorder(nil, nil, nil, revealApiKeyBtn, welcomeEntryApiKey)
 
 	finishSetupBtn := widget.NewButtonWithIcon("Proceed", theme.NavigateNextIcon(), func() {
-		popupVerifyInstance := dialog.NewCustomWithoutButtons("Testing this instance", loadingContent("Checking instance..."), windowGuibalt)
+		popupVerifyInstance := dialog.NewCustomWithoutButtons("Testing this instance", loadingContent("Checking instance..."), coalWindow)
 		popupVerifyInstance.Show()
 
 		if !strings.HasPrefix(welcomeInstanceSelector.Text, "https") {
@@ -65,24 +65,24 @@ func showFirstRunScreen() fyne.CanvasObject {
 			if err.Error() == "error.api.youtube.login" {
 				dialog.ShowConfirm("Something is wrong", "This instance is working, but it can't download YouTube videos.\nDo you want to use this instance anyway?", func(b bool) {
 					if b {
-						appGuibalt.Preferences().SetString("instance", gobalt.CobaltApi)
-						appGuibalt.Preferences().SetString("api-key", gobalt.ApiKey)
-						appGuibalt.Preferences().SetBool("first-run", true)
-						windowGuibalt.SetContent(showMainScreen())
+						coalApp.Preferences().SetString("instance", gobalt.CobaltApi)
+						coalApp.Preferences().SetString("api-key", gobalt.ApiKey)
+						coalApp.Preferences().SetBool("first-run", true)
+						coalWindow.SetContent(showMainScreen())
 					}
-				}, windowGuibalt)
+				}, coalWindow)
 				return
 			}
 
-			dialog.ShowError(fmt.Errorf("unable to use selected instance, did you set an api key?\n(Details: %v)", err), windowGuibalt)
+			dialog.ShowError(fmt.Errorf("unable to use selected instance, did you set an api key?\n(Details: %v)", err), coalWindow)
 			return
 		}
 
-		appGuibalt.Preferences().SetString("instance", gobalt.CobaltApi)
-		appGuibalt.Preferences().SetString("api-key", gobalt.ApiKey)
-		appGuibalt.Preferences().SetBool("first-run", true)
+		coalApp.Preferences().SetString("instance", gobalt.CobaltApi)
+		coalApp.Preferences().SetString("api-key", gobalt.ApiKey)
+		coalApp.Preferences().SetBool("first-run", true)
 
-		windowGuibalt.SetContent(showMainScreen())
+		coalWindow.SetContent(showMainScreen())
 
 		popupVerifyInstance.Hide()
 	})
@@ -96,13 +96,13 @@ func showFirstRunScreen() fyne.CanvasObject {
 		OnTapped: func() {
 			log.Println("refreshing instances...")
 
-			popupRefreshing := widget.NewModalPopUp(loadingContent("Refreshing instance list..."), windowGuibalt.Canvas())
+			popupRefreshing := widget.NewModalPopUp(loadingContent("Refreshing instance list..."), coalWindow.Canvas())
 			popupRefreshing.Show()
 
 			instances, err := refreshInstances()
 			if err != nil {
 				popupRefreshing.Hide()
-				dialog.ShowError(errors.New("unable to refresh instances.\nverify your internet connection"), windowGuibalt)
+				dialog.ShowError(errors.New("unable to refresh instances.\nverify your internet connection"), coalWindow)
 			}
 
 			welcomeInstanceSelector.SetOptions(instances)
@@ -148,13 +148,13 @@ func showFirstRunScreen() fyne.CanvasObject {
 func showMainScreen() fyne.CanvasObject {
 	//downloadOptions := gobalt.CreateDefaultSettings()
 	btnConfig := widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-		windowGuibalt.SetContent(showConfigScreen())
+		coalWindow.SetContent(showConfigScreen())
 	})
 
 	btnDownloadQueue := widget.NewButtonWithIcon("", theme.ListIcon(), func() {
 		//queue screen
 	})
-	headerTitleApp := widget.NewLabelWithStyle("Guibalt", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	headerTitleApp := widget.NewLabelWithStyle("coal", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	headerContainer := container.NewBorder(nil, nil, btnConfig, btnDownloadQueue, headerTitleApp)
 	container.NewThemeOverride(headerContainer, themeNoBg{})
 
@@ -166,12 +166,23 @@ func showMainScreen() fyne.CanvasObject {
 
 	downloadEntry := widget.NewEntry()
 	downloadEntry.PlaceHolder = "https://www.youtube.com/watch?v=Q7M5v8UAZAI"
-	btnPasteFromClip := widget.NewButtonWithIcon("", theme.ContentPasteIcon(), nil)
+	btnPasteFromClip := widget.NewButtonWithIcon("", theme.ContentPasteIcon(), func() {
+		downloadEntry.SetText(regexPaste.FindString(coalWindow.Clipboard().Content()))
+	})
 	//btnPasteFromClip.Importance = widget.HighImportance
 	downloadEntry.ActionItem = btnPasteFromClip
 
 	btnDownload := widget.NewButtonWithIcon("", theme.DownloadIcon(), nil)
-	btnDownload.Importance = widget.HighImportance
+	btnDownload.Importance = widget.SuccessImportance
+	btnDownload.Disable()
+	downloadEntry.Validator = func(s string) error {
+		if regexPaste.MatchString(s) {
+			btnDownload.Enable()
+			return nil
+		}
+		btnDownload.Disable()
+		return fmt.Errorf("invalid url")
+	}
 
 	downloadInputLayout := container.NewBorder(nil, nil, nil, btnDownload, downloadEntry)
 

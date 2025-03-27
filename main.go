@@ -2,27 +2,29 @@ package main
 
 import (
 	"log"
+	"regexp"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
 var (
-	appGuibalt    = app.NewWithID("br.dev.lostdusty.guibalt")
-	windowGuibalt = appGuibalt.NewWindow("Guibalt")
+	coalApp    = app.NewWithID("br.dev.lostdusty.coal")
+	coalWindow = coalApp.NewWindow("coal")
+	regexPaste = regexp.MustCompile(`https?\:\/\/[^\s]+`)
 )
 
 func main() {
-	windowGuibalt.CenterOnScreen()
-	windowGuibalt.SetMaster()
-	windowGuibalt.Resize(fyne.Size{Width: 600, Height: 400})
+	coalWindow.CenterOnScreen()
+	coalWindow.SetMaster()
+	coalWindow.Resize(fyne.Size{Width: 600, Height: 400})
 
 	startScreen := showMainScreen()
-	if !appGuibalt.Preferences().BoolWithFallback("first-run", false) {
+	if !coalApp.Preferences().BoolWithFallback("first-run", false) {
 		log.Println("showing first run screen...")
 		startScreen = showFirstRunScreen()
 	}
 
-	windowGuibalt.SetContent(startScreen)
-	windowGuibalt.ShowAndRun()
+	coalWindow.SetContent(startScreen)
+	coalWindow.ShowAndRun()
 }
